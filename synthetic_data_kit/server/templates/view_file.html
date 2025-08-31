@@ -191,6 +191,44 @@
                     <!-- Plain JSON view when no recognized format is found -->
                     <div id="jsoneditor" class="json-viewer"></div>
                     {% endif %}
+                {% elif file_type == "lance" %}
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h3 class="mb-0">Lance Dataset Preview</h3>
+                        <small class="text-muted">Showing up to 50 rows</small>
+                    </div>
+                    {% if lance_columns and lance_rows %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    {% for col in lance_columns %}
+                                    <th scope="col">{{ col }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in lance_rows %}
+                                <tr>
+                                    {% for col in lance_columns %}
+                                    <td>
+                                        {% set val = row.get(col) %}
+                                        {% if val is mapping or val is sequence and val is not string %}
+                                            <code>{{ val|tojson }}</code>
+                                        {% else %}
+                                            {{ val }}
+                                        {% endif %}
+                                    </td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">No rows found in this dataset.</div>
+                    {% endif %}
+                </div>
                 {% else %}
                 <pre>{{ content }}</pre>
                 {% endif %}

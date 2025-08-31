@@ -14,7 +14,7 @@ paths:
 
 # LLM Provider configuration
 llm:
-  # Provider selection: "vllm" or "api-endpoint"
+  # Provider selection: "vllm", "api-endpoint", or "ollama"
   provider: "api-endpoint"
 
 # VLLM server configuration
@@ -34,6 +34,14 @@ api-endpoint:
   max_retries: 3                       # Number of retries for API calls
   retry_delay: 1.0                     # Initial delay between retries (seconds)
   sleep_time: 0.5                      # Small delay in seconds between batches to avoid rate limits
+
+# Ollama (local) configuration
+ollama:
+  api_base: "http://localhost:11434" # Base URL for Ollama local server
+  model: "llama3"                     # Default model tag to use
+  max_retries: 3
+  retry_delay: 1.0
+  sleep_time: 0.1
 
 # Ingest configuration
 ingest:

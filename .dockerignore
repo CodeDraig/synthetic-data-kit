@@ -1,0 +1,25 @@
+# Ignore VCS and caches
+.git
+.gitignore
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.DS_Store
+
+# Virtual envs
+venv/
+.venv/
+.venv-ci/
+
+# Large or local-only directories
+node_modules/
+example_output/
+data/
+
+# Tests and docs not needed in runtime image
+/tests/
+.getting-started/

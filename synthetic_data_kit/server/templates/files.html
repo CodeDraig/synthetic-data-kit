@@ -14,19 +14,19 @@
                     <div class="col-md-6">
                         <div class="card mb-3">
                             <div class="card-header bg-primary text-white">
-                                <h4>Input Files (Output Directory)</h4>
+                                <h4>Input Files (Input Directory)</h4>
                             </div>
                             <div class="card-body">
-                                {% if output_files %}
+                                {% if input_files %}
                                 <div class="list-group">
-                                    {% for file in output_files %}
+                                    {% for file in input_files %}
                                     <a href="{{ url_for('view_file', file_path=file) }}" class="list-group-item list-group-item-action">
                                         {{ file }}
                                     </a>
                                     {% endfor %}
                                 </div>
                                 {% else %}
-                                <p class="text-muted">No files found in the output directory.</p>
+                                <p class="text-muted">No files found in the input directory.</p>
                                 {% endif %}
                             </div>
                             <div class="card-footer text-end">

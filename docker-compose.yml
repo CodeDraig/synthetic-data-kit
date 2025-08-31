@@ -1,0 +1,16 @@
+services:
+  sdk-server:
+    build: .
+    image: synthetic-data-kit:latest
+    container_name: sdk-server
+    environment:
+      - SDK_BROWSE_ROOT=/app/data
+      - PYTHONUNBUFFERED=1
+      # Optional: set API_ENDPOINT_KEY in your shell to pass through
+      - API_ENDPOINT_KEY=${API_ENDPOINT_KEY:-}
+    volumes:
+      - ./data:/app/data
+      - ./configs:/app/configs:ro
+    ports:
+      - "5001:5000"
+    restart: unless-stopped

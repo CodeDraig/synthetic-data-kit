@@ -10,14 +10,18 @@
                 <h2>Upload File</h2>
             </div>
             <div class="card-body">
-                <p>Upload a text file to use as input for generating QA pairs.</p>
+                <p>Upload a document file to use in the app.</p>
                 
                 <form method="POST" enctype="multipart/form-data" class="mt-4 loading-form" data-loading-message="Uploading file... Please wait">
                     {{ form.csrf_token }}
                     
                     <div class="mb-3">
                         <label for="file" class="form-label">{{ form.file.label }}</label>
-                        {{ form.file(class="form-control") }}
+                        {{ form.file(class="form-control", accept=upload_accept) }}
+                        <div id="upload-dropzone" class="mt-2 p-3 border border-secondary rounded text-center bg-light" role="button">
+                            Drag & drop a file here, or click to select
+                        </div>
+                        <small id="upload-selected" class="text-muted"></small>
                         {% if form.file.errors %}
                         <div class="invalid-feedback d-block">
                             {% for error in form.file.errors %}
@@ -25,7 +29,7 @@
                             {% endfor %}
                         </div>
                         {% endif %}
-                        <div class="form-text">Select a text file (.txt) to upload.</div>
+                        <div class="form-text">Select a supported file: .txt, .pdf, .docx, .pptx, .html, .htm, .epub, .eml</div>
                     </div>
                     
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
@@ -36,4 +40,45 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function(){
+    const fileInput = document.getElementById('file');
+    const dropzone = document.getElementById('upload-dropzone');
+    const selected = document.getElementById('upload-selected');
+    const accept = (fileInput && fileInput.getAttribute('accept')) || '';
+    const acceptSet = new Set(accept.split(',').map(s => s.trim().toLowerCase()).filter(Boolean));
+
+    function isAccepted(file){
+      if (!acceptSet.size) return true;
+      const name = (file.name || '').toLowerCase();
+      for (const ext of acceptSet) { if (name.endsWith(ext)) return true; }
+      return false;
+    }
+    function updateSelectedDisplay(file){
+      if (!selected) return;
+      selected.textContent = file ? `Selected: ${file.name}` : '';
+    }
+    if (dropzone && fileInput){
+      dropzone.addEventListener('click', () => fileInput.click());
+      dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('border-primary'); });
+      dropzone.addEventListener('dragleave', () => dropzone.classList.remove('border-primary'));
+      dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('border-primary');
+        const files = e.dataTransfer?.files;
+        if (!files || files.length === 0) return;
+        const f = Array.from(files).find(isAccepted);
+        if (!f) { updateSelectedDisplay(null); return; }
+        const dt = new DataTransfer();
+        dt.items.add(f);
+        try { fileInput.files = dt.files; } catch (err) { /* ignore */ }
+        updateSelectedDisplay(fileInput.files[0]);
+      });
+      fileInput.addEventListener('change', () => updateSelectedDisplay(fileInput.files && fileInput.files[0]));
+    }
+  });
+</script>
 {% endblock %}

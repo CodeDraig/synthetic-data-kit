@@ -81,6 +81,11 @@ def process_file(
     # Generate content based on type
     if file_path.endswith(".lance"):
         dataset = load_lance_dataset(file_path)
+        if dataset is None:
+            raise FileNotFoundError(
+                f"Lance dataset not found or invalid at path: {file_path}. "
+                "Please select the top-level .lance directory (e.g., /path/to/foo.lance), not an internal subdirectory."
+            )
         documents = dataset.to_table().to_pylist()
     else:
         documents = [{"text": read_json(file_path), "image": None}]

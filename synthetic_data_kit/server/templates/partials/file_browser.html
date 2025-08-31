@@ -1,0 +1,91 @@
+<!-- File Browser Modal -->
+<div class="modal fade" id="fileBrowserModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Browse Server Files</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="small text-muted">Root: <code>{{ browse_root }}</code></div>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="fb-up">Up</button>
+        </div>
+        <nav id="fb-breadcrumbs" class="mb-2"></nav>
+        <ul id="fb-list" class="list-group" style="max-height: 360px; overflow:auto"></ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  let fbModal, fbList, fbCrumbs, fbUp, currentRel = "", targetInputId = null, extFilter = "", dirsOnly = false;
+  document.addEventListener('DOMContentLoaded', function(){
+    fbModal = document.getElementById('fileBrowserModal');
+    fbList = document.getElementById('fb-list');
+    fbCrumbs = document.getElementById('fb-breadcrumbs');
+    fbUp = document.getElementById('fb-up');
+    document.querySelectorAll('.open-file-browser').forEach(btn => {
+      btn.addEventListener('click', function(){
+        targetInputId = this.getAttribute('data-target-input');
+        extFilter = (this.getAttribute('data-extensions') || '').trim();
+        dirsOnly = (this.getAttribute('data-dirs-only') || '').toLowerCase() === 'true';
+        currentRel = '';
+        const modal = new bootstrap.Modal(fbModal);
+        modal.show();
+        loadDir('');
+      });
+    });
+    fbUp.addEventListener('click', function(){ if(currentRel){ const p=currentRel.split('/'); p.pop(); loadDir(p.join('/')); }});
+  });
+  async function loadDir(rel){
+    currentRel = rel || '';
+    const params = new URLSearchParams({ path: currentRel, ext: extFilter, dirsOnly: dirsOnly ? 'true' : 'false' });
+    const res = await fetch(`/api/browse?${params.toString()}`);
+    const data = await res.json();
+    render(data);
+  }
+  function render(data){
+    // breadcrumbs
+    fbCrumbs.innerHTML = '';
+    const parts = data.breadcrumbs || [];
+    const wrap = document.createElement('div');
+    wrap.className = 'small';
+    const rootLink = document.createElement('a'); rootLink.href='#'; rootLink.textContent='/'; rootLink.addEventListener('click', e=>{e.preventDefault(); loadDir('');});
+    wrap.appendChild(rootLink);
+    parts.forEach((b)=>{
+      const sep = document.createTextNode(' / '); wrap.appendChild(sep);
+      const a = document.createElement('a'); a.href='#'; a.textContent=b.name; a.addEventListener('click', e=>{e.preventDefault(); loadDir(b.relPath);});
+      wrap.appendChild(a);
+    });
+    fbCrumbs.appendChild(wrap);
+    // list
+    fbList.innerHTML = '';
+    (data.entries||[]).forEach(entry => {
+      const li = document.createElement('li');
+      li.className = 'list-group-item d-flex justify-content-between align-items-center';
+      const name = document.createElement('span'); name.textContent = entry.name;
+      const badge = document.createElement('span'); badge.className = 'badge rounded-pill ' + (entry.type==='dir'?'bg-secondary':'bg-primary'); badge.textContent = entry.type;
+      li.appendChild(name); li.appendChild(badge);
+      li.style.cursor='pointer';
+      li.addEventListener('click', function(){
+        if(entry.type==='dir'){
+          const isLanceDir = entry.name.toLowerCase().endsWith('.lance');
+          if((dirsOnly && targetInputId) || isLanceDir){
+            const inp = document.getElementById(targetInputId);
+            if(inp){ inp.value = entry.absPath; const modal = bootstrap.Modal.getInstance(fbModal); modal && modal.hide(); }
+          } else {
+            loadDir(entry.relPath);
+          }
+        }
+        else if(targetInputId){ const inp = document.getElementById(targetInputId); if(inp){ inp.value = entry.absPath; const modal = bootstrap.Modal.getInstance(fbModal); modal && modal.hide(); }}
+      });
+      fbList.appendChild(li);
+    });
+  }
+})();
+</script>

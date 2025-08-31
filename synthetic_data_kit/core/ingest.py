@@ -42,6 +42,8 @@ def determine_parser(file_path: str, config: Dict[str, Any], multimodal: bool = 
     from synthetic_data_kit.parsers.ppt_parser import PPTParser
     from synthetic_data_kit.parsers.txt_parser import TXTParser
     from synthetic_data_kit.parsers.multimodal_parser import MultimodalParser
+    from synthetic_data_kit.parsers.epub_parser import EPUBParser
+    from synthetic_data_kit.parsers.email_parser import EmailParser
 
     ext = os.path.splitext(file_path)[1].lower()
     if multimodal:
@@ -73,6 +75,8 @@ def determine_parser(file_path: str, config: Dict[str, Any], multimodal: bool = 
             ".docx": DOCXParser(),
             ".pptx": PPTParser(),
             ".txt": TXTParser(),
+            ".epub": EPUBParser(),
+            ".eml": EmailParser(),
         }
 
         if ext in parsers:

@@ -82,6 +82,22 @@ class LLMClient:
             
             # Initialize OpenAI client
             self._init_openai_client()
+        elif self.provider == 'ollama':
+            # Load Ollama configuration
+            ollama_config = self.config.get('ollama', {})
+            
+            # Set parameters, with CLI overrides taking precedence
+            self.api_base = api_base or ollama_config.get('api_base', 'http://localhost:11434')
+            self.model = model_name or ollama_config.get('model', 'llama3')
+            self.max_retries = max_retries or ollama_config.get('max_retries', 3)
+            self.retry_delay = retry_delay or ollama_config.get('retry_delay', 1.0)
+            self.sleep_time = ollama_config.get('sleep_time', 0.1)
+            
+            # Verify server is running
+            available, info = self._check_ollama_server()
+            if not available:
+                raise ConnectionError(f"Ollama server not available at {self.api_base}: {info}")
+            
         else:  # Default to vLLM
             # Load vLLM configuration
             vllm_config = get_vllm_config(self.config)
@@ -154,6 +170,8 @@ class LLMClient:
         
         if self.provider == 'api-endpoint':
             return self._openai_chat_completion(messages, temperature, max_tokens, top_p, verbose)
+        elif self.provider == 'ollama':
+            return self._ollama_chat_completion(messages, temperature, max_tokens, top_p, verbose)
         else:  # Default to vLLM
             return self._vllm_chat_completion(messages, temperature, max_tokens, top_p, verbose)
     
@@ -340,6 +358,8 @@ class LLMClient:
         
         if self.provider == 'api-endpoint':
             return self._openai_batch_completion(message_batches, temperature, max_tokens, top_p, batch_size, verbose)
+        elif self.provider == 'ollama':
+            return self._ollama_batch_completion(message_batches, temperature, max_tokens, top_p, batch_size, verbose)
         else:  # Default to vLLM
             return self._vllm_batch_completion(message_batches, temperature, max_tokens, top_p, batch_size, verbose)
     
@@ -593,6 +613,69 @@ class LLMClient:
         
         return results
     
+    def _check_ollama_server(self) -> tuple:
+        """Check if the local Ollama server is running"""
+        try:
+            response = requests.get(f"{self.api_base}/api/tags", timeout=5)
+            if response.status_code == 200:
+                return True, response.json()
+            return False, f"Server returned status code: {response.status_code}"
+        except requests.exceptions.RequestException as e:
+            return False, f"Server connection error: {str(e)}"
+
+    def _ollama_chat_completion(self, 
+                               messages: List[Dict[str, str]],
+                               temperature: float,
+                               max_tokens: int,
+                               top_p: float,
+                               verbose: bool) -> str:
+        """Generate chat completion using Ollama's /api/chat endpoint"""
+        data = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": temperature,
+            "top_p": top_p,
+            "stream": False
+        }
+        for attempt in range(self.max_retries):
+            try:
+                if verbose:
+                    logger.info(f"Sending request to Ollama model {self.model}...")
+                response = requests.post(
+                    f"{self.api_base}/api/chat",
+                    headers={"Content-Type": "application/json"},
+                    data=json.dumps(data),
+                    timeout=180
+                )
+                if verbose:
+                    logger.info(f"Received response with status code: {response.status_code}")
+                response.raise_for_status()
+                return response.json()["message"]["content"]
+            except (requests.exceptions.RequestException, KeyError) as e:
+                if attempt == self.max_retries - 1:
+                    raise Exception(f"Failed to get Ollama completion after {self.max_retries} attempts: {str(e)}")
+                time.sleep(self.retry_delay * (attempt + 1))
+
+    def _ollama_batch_completion(self,
+                                 message_batches: List[List[Dict[str, str]]],
+                                 temperature: float,
+                                 max_tokens: int,
+                                 top_p: float,
+                                 batch_size: int,
+                                 verbose: bool) -> List[str]:
+        """Process multiple message batches using Ollama"""
+        results = []
+        for i in range(0, len(message_batches), batch_size):
+            batch_chunk = message_batches[i:i+batch_size]
+            if verbose:
+                logger.info(f"Processing Ollama batch {i//batch_size + 1}/{(len(message_batches) + batch_size - 1) // batch_size} with {len(batch_chunk)} requests")
+            for messages in batch_chunk:
+                content = self._ollama_chat_completion(messages, temperature, max_tokens, top_p, verbose)
+                results.append(content)
+            if i + batch_size < len(message_batches):
+                time.sleep(self.sleep_time)
+        return results
+
     @classmethod
     def from_config(cls, config_path: Path) -> 'LLMClient':
         """Create a client from configuration file"""

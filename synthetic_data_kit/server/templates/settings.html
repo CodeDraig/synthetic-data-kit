@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="card mb-4">
+      <div class="card-header">
+        <h2>Settings</h2>
+      </div>
+      <div class="card-body">
+        <p class="text-muted">Adjust configuration for this server session. Changes apply immediately in-memory and are not persisted to disk.</p>
+
+        <form method="POST" class="loading-form" data-loading-message="Applying settings...">
+          {{ form.csrf_token }}
+
+          <!-- Provider -->
+          <div class="mb-4">
+            <h5>Provider</h5>
+            <div class="row g-3 align-items-end">
+              <div class="col-md-6">
+                <label for="provider" class="form-label">{{ form.provider.label }}</label>
+                {{ form.provider(class="form-select") }}
+                <div class="form-text">Select which backend provider to use.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- LLM Configs -->
+          <div class="mb-4">
+            <h5>VLLM</h5>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label for="vllm_api_base" class="form-label">{{ form.vllm_api_base.label }}</label>
+                {{ form.vllm_api_base(class="form-control", placeholder="http://localhost:8000/v1") }}
+              </div>
+              <div class="col-md-4">
+                <label for="vllm_model" class="form-label">{{ form.vllm_model.label }}</label>
+                {{ form.vllm_model(class="form-control", placeholder="Model name") }}
+              </div>
+              <div class="col-md-2">
+                <label for="vllm_port" class="form-label">{{ form.vllm_port.label }}</label>
+                {{ form.vllm_port(class="form-control", placeholder="8000") }}
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <h5>API Endpoint</h5>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label for="api_ep_api_base" class="form-label">{{ form.api_ep_api_base.label }}</label>
+                {{ form.api_ep_api_base(class="form-control", placeholder="https://api.example.com") }}
+              </div>
+              <div class="col-md-4">
+                <label for="api_ep_model" class="form-label">{{ form.api_ep_model.label }}</label>
+                {{ form.api_ep_model(class="form-control", placeholder="Model alias per AI-MODELS.md") }}
+              </div>
+            </div>
+            <div class="row g-3 mt-2">
+              <div class="col-md-6">
+                <label for="api_ep_api_key" class="form-label">{{ form.api_ep_api_key.label }}</label>
+                {{ form.api_ep_api_key(class="form-control", placeholder="Enter API key (session only)") }}
+                <div class="form-text">Not persisted to disk; applied to this server session only.</div>
+              </div>
+            </div>
+            <div class="form-text">Ensure model references comply with AI-MODELS.md aliases.</div>
+          </div>
+
+          <div class="mb-4">
+            <h5>Ollama</h5>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label for="ollama_api_base" class="form-label">{{ form.ollama_api_base.label }}</label>
+                {{ form.ollama_api_base(class="form-control", placeholder="http://localhost:11434") }}
+              </div>
+              <div class="col-md-4">
+                <label for="ollama_model" class="form-label">{{ form.ollama_model.label }}</label>
+                {{ form.ollama_model(class="form-control", placeholder="Model name") }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Paths -->
+          <div class="mb-4">
+            <h5>Paths</h5>
+            <div class="mb-3">
+              <label for="paths_input_default" class="form-label">{{ form.paths_input_default.label }}</label>
+              <div class="input-group">
+                {{ form.paths_input_default(class="form-control", placeholder="data/input") }}
+                <button type="button" class="btn btn-outline-secondary open-file-browser" data-target-input="paths_input_default" data-extensions="" data-dirs-only="true">Browse</button>
+              </div>
+              <div class="form-text">Default input directory used by tools.</div>
+            </div>
+            <div class="mb-3">
+              <label for="paths_output_default" class="form-label">{{ form.paths_output_default.label }}</label>
+              <div class="input-group">
+                {{ form.paths_output_default(class="form-control", placeholder="data/output") }}
+                <button type="button" class="btn btn-outline-secondary open-file-browser" data-target-input="paths_output_default" data-extensions="" data-dirs-only="true">Browse</button>
+              </div>
+              <div class="form-text">Default output directory for generated files.</div>
+            </div>
+          </div>
+
+          <!-- Generation -->
+          <div class="mb-4">
+            <h5>Generation</h5>
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label for="gen_temperature" class="form-label">{{ form.gen_temperature.label }}</label>
+                {{ form.gen_temperature(class="form-control", step="0.05", min="0", max="2") }}
+              </div>
+              <div class="col-md-3">
+                <label for="gen_top_p" class="form-label">{{ form.gen_top_p.label }}</label>
+                {{ form.gen_top_p(class="form-control", step="0.05", min="0", max="1") }}
+              </div>
+              <div class="col-md-3">
+                <label for="gen_max_tokens" class="form-label">{{ form.gen_max_tokens.label }}</label>
+                {{ form.gen_max_tokens(class="form-control", min="1") }}
+              </div>
+            </div>
+          </div>
+
+          <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+            <button type="button" class="btn btn-secondary" id="test-connection-btn">Test Connection</button>
+            {{ form.submit(class="btn btn-primary") }}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% include 'partials/file_browser.html' %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const btn = document.getElementById('test-connection-btn');
+    if (!btn) return;
+    btn.addEventListener('click', async function() {
+      try {
+        const providerEl = document.getElementById('provider');
+        const provider = providerEl ? providerEl.value : 'vllm';
+        const payload = { provider };
+        if (provider === 'vllm') {
+          const base = document.getElementById('vllm_api_base')?.value || '';
+          if (base) payload.api_base = base;
+        } else if (provider === 'api-endpoint') {
+          const base = document.getElementById('api_ep_api_base')?.value || '';
+          const key = document.getElementById('api_ep_api_key')?.value || '';
+          if (base) payload.api_base = base;
+          if (key) payload.api_key = key;
+        } else if (provider === 'ollama') {
+          const base = document.getElementById('ollama_api_base')?.value || '';
+          if (base) payload.api_base = base;
+        }
+
+        const res = await fetch('/api/test_provider', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert(`Connection OK (provider=${data.provider}) -> ${data.url} (status=${data.status})`);
+        } else {
+          alert(`Connection FAILED (provider=${data.provider || provider}). ${data.error || 'Unknown error'}`);
+        }
+      } catch (e) {
+        alert('Test failed: ' + (e?.message || e));
+      }
+    });
+  });
+</script>
+{% endblock %}

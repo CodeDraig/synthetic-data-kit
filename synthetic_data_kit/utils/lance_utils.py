@@ -32,6 +32,33 @@ def create_lance_dataset(
     table = pa.Table.from_pylist(data, schema=schema)
     lance.write_dataset(table, output_path, mode="overwrite")
 
+def _resolve_lance_root(path: str) -> Optional[str]:
+    """Resolve the root directory of a Lance dataset.
+
+    If the provided path is inside a Lance dataset (e.g., .../foo.lance/data/<uuid>.lance),
+    this walks up the directory tree to find the nearest ancestor directory that ends with
+    ".lance" and returns that as the dataset root. If the path is already the root, it is
+    returned unchanged. Returns None if no suitable root is found.
+    """
+    p = os.path.abspath(path)
+    # Always walk up to find a .lance ancestor, but if starting inside
+    # .../<root>.lance/data/<uuid>.lance ensure we pick <root>.lance
+    # and not the nested <uuid>.lance.
+    cur = p
+    candidate = None
+    while True:
+        if os.path.isdir(cur) and cur.endswith(".lance"):
+            parent_dir = os.path.basename(os.path.dirname(cur))
+            # If parent is 'data', this is a nested version dir; keep walking up
+            if parent_dir.lower() != "data":
+                candidate = cur
+                break
+        parent = os.path.dirname(cur)
+        if parent == cur:
+            break
+        cur = parent
+    return candidate
+
 def load_lance_dataset(
     dataset_path: str
 ):
@@ -43,6 +70,8 @@ def load_lance_dataset(
     Returns:
         The loaded Lance dataset, or None if the dataset does not exist.
     """
-    if not os.path.exists(dataset_path):
+    # Resolve to the dataset root if a nested internal path was provided
+    resolved = _resolve_lance_root(dataset_path) or dataset_path
+    if not os.path.exists(resolved) or not (os.path.isdir(resolved) and resolved.endswith(".lance")):
         return None
-    return lance.dataset(dataset_path)
+    return lance.dataset(resolved)

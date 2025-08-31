@@ -10,7 +10,7 @@
                 <h2>Ingest Document</h2>
             </div>
             <div class="card-body">
-                <p>Parse documents (PDF, HTML, YouTube, DOCX, PPT, TXT) into clean text that can be used for content generation.</p>
+                <p>Parse documents (PDF, HTML, EPUB, Email (.eml), YouTube, DOCX, PPT, TXT) into clean text that can be used for content generation.</p>
                 
                 <form method="POST" class="mt-4 loading-form" enctype="multipart/form-data" data-loading-message="Parsing document... Please wait">
                     {{ form.csrf_token }}
@@ -23,7 +23,11 @@
                     
                     <div id="upload_file_div" class="mb-3">
                         <label for="upload_file" class="form-label">{{ form.upload_file.label }}</label>
-                        {{ form.upload_file(class="form-control") }}
+                        {{ form.upload_file(class="form-control", accept=ingest_accept, multiple=True) }}
+                        <div id="ingest-dropzone" class="mt-2 p-3 border border-secondary rounded text-center bg-light" role="button">
+                            Drag & drop files here, or click to select
+                        </div>
+                        <small id="ingest-selected" class="text-muted"></small>
                         {% if form.upload_file.errors %}
                         <div class="invalid-feedback d-block">
                             {% for error in form.upload_file.errors %}
@@ -31,12 +35,15 @@
                             {% endfor %}
                         </div>
                         {% endif %}
-                        <div class="form-text">Supported formats: PDF, HTML, DOCX, PPT, TXT.</div>
+                        <div class="form-text">Supported formats: PDF, HTML/HTM, DOCX, PPTX, TXT, EPUB, Email (.eml).</div>
                     </div>
                     
                     <div id="input_path_div" class="mb-3" style="display: none;">
                         <label for="input_path" class="form-label">{{ form.input_path.label }}</label>
-                        {{ form.input_path(class="form-control", placeholder="Enter file path or URL") }}
+                        <div class="input-group">
+                            {{ form.input_path(class="form-control", placeholder="Enter file path or URL") }}
+                            <button type="button" class="btn btn-outline-secondary open-file-browser" data-target-input="input_path" data-extensions="{{ ingest_accept }}">Browse</button>
+                        </div>
                         {% if form.input_path.errors %}
                         <div class="invalid-feedback d-block">
                             {% for error in form.input_path.errors %}
@@ -100,6 +107,27 @@
                                         </div>
                                         <span class="badge bg-primary rounded-pill">.txt</span>
                                     </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <strong>EPUB eBooks</strong>
+                                            <div class="text-muted small">Extract chapters and text from EPUB files</div>
+                                        </div>
+                                        <span class="badge bg-primary rounded-pill">.epub</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <strong>Email Files</strong>
+                                            <div class="text-muted small">Parse .eml emails (prefers plain text, falls back to HTML)</div>
+                                        </div>
+                                        <span class="badge bg-primary rounded-pill">.eml</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <strong>HTML Files</strong>
+                                            <div class="text-muted small">Extract content from local HTML files</div>
+                                        </div>
+                                        <span class="badge bg-primary rounded-pill">.html, .htm</span>
+                                    </li>
                                 </ul>
                             </div>
                         </div>
@@ -148,6 +176,13 @@
         const uploadFileDiv = document.getElementById('upload_file_div');
         const inputPathDiv = document.getElementById('input_path_div');
         const pathHelpText = document.getElementById('path_help_text');
+        const browseButtons = document.querySelectorAll('.open-file-browser');
+        const browseBtn = document.querySelector('#input_path_div .open-file-browser');
+        const ingestFileInput = document.getElementById('upload_file');
+        const ingestDropzone = document.getElementById('ingest-dropzone');
+        const ingestSelected = document.getElementById('ingest-selected');
+        const ingestAccept = (ingestFileInput && ingestFileInput.getAttribute('accept')) || '';
+        const ingestAcceptSet = new Set(ingestAccept.split(',').map(s => s.trim().toLowerCase()).filter(Boolean));
         
         // Function to update form display based on selected input type
         function updateFormDisplay() {
@@ -164,8 +199,10 @@
                 // Update help text based on URL or path selection
                 if (selectedValue === 'url') {
                     pathHelpText.textContent = 'Enter a URL to parse. Supports web pages and YouTube videos.';
+                    if (browseBtn) browseBtn.style.display = 'none';
                 } else {
-                    pathHelpText.textContent = 'Enter the path to a local file. Supported formats: PDF, HTML, DOCX, PPT, TXT.';
+                    pathHelpText.textContent = 'Enter the path to a local file. Supported formats: PDF, HTML/HTM, DOCX, PPTX, TXT, EPUB, Email (.eml).';
+                    if (browseBtn) browseBtn.style.display = 'inline-block';
                 }
             }
         }
@@ -175,6 +212,40 @@
         
         // Add event listener for changes
         inputTypeSelector.addEventListener('change', updateFormDisplay);
+
+        // ---- Drag & Drop for multi-file upload ----
+        function isAccepted(file) {
+            if (!ingestAcceptSet.size) return true;
+            const name = (file.name || '').toLowerCase();
+            for (const ext of ingestAcceptSet) {
+                if (name.endsWith(ext)) return true;
+            }
+            return false;
+        }
+        function updateSelectedDisplay(files) {
+            if (!ingestSelected) return;
+            if (!files || files.length === 0) { ingestSelected.textContent = ''; return; }
+            const names = Array.from(files).map(f => f.name).join(', ');
+            ingestSelected.textContent = `Selected: ${names}`;
+        }
+        if (ingestDropzone && ingestFileInput) {
+            ingestDropzone.addEventListener('click', () => ingestFileInput.click());
+            ingestDropzone.addEventListener('dragover', (e) => { e.preventDefault(); ingestDropzone.classList.add('border-primary'); });
+            ingestDropzone.addEventListener('dragleave', () => ingestDropzone.classList.remove('border-primary'));
+            ingestDropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                ingestDropzone.classList.remove('border-primary');
+                const dropped = e.dataTransfer?.files;
+                if (!dropped || dropped.length === 0) return;
+                const dt = new DataTransfer();
+                Array.from(dropped).forEach(f => { if (isAccepted(f)) dt.items.add(f); });
+                if (dt.files.length === 0) { updateSelectedDisplay([]); return; }
+                try { ingestFileInput.files = dt.files; } catch (err) { /* ignore if not supported */ }
+                updateSelectedDisplay(ingestFileInput.files);
+            });
+            ingestFileInput.addEventListener('change', () => updateSelectedDisplay(ingestFileInput.files));
+        }
     });
 </script>
+{% include 'partials/file_browser.html' %}
 {% endblock %}

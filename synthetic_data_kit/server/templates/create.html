@@ -37,9 +37,13 @@
                                 <li><a class="dropdown-item file-select" href="#" data-file="{{ file }}">{{ file }}</a></li>
                                 {% endfor %}
                             </ul>
+                            <button type="button" class="btn btn-outline-secondary open-file-browser" data-target-input="input_file" data-extensions="{{ create_accept }}">Browse</button>
                         </div>
                         {% else %}
-                        {{ form.input_file(class="form-control", placeholder="Path to input text file") }}
+                        <div class="input-group">
+                            {{ form.input_file(class="form-control", placeholder="Path to input text file") }}
+                            <button type="button" class="btn btn-outline-secondary open-file-browser" data-target-input="input_file" data-extensions="{{ create_accept }}">Browse</button>
+                        </div>
                         {% endif %}
                         {% if form.input_file.errors %}
                         <div class="invalid-feedback d-block">
@@ -124,4 +128,5 @@
         });
     });
 </script>
+{% include 'partials/file_browser.html' %}
 {% endblock %}

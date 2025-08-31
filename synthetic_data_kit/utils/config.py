@@ -79,7 +79,7 @@ def get_llm_provider(config: Dict[str, Any]) -> str:
     """Get the selected LLM provider
     
     Returns:
-        String with provider name: 'vllm' or 'api-endpoint'
+        String with provider name: 'vllm', 'api-endpoint', or 'ollama'
     """
     llm_config = config.get('llm', {})
     provider = llm_config.get('provider', 'vllm')
@@ -97,6 +97,17 @@ def get_vllm_config(config: Dict[str, Any]) -> Dict[str, Any]:
         'max_retries': 3,
         'retry_delay': 1.0
     })
+
+def get_ollama_config(config: Dict[str, Any]) -> Dict[str, Any]:
+    """Get Ollama configuration"""
+    return config.get('ollama', {
+        'api_base': 'http://localhost:11434',
+        'model': 'llama3',
+        'max_retries': 3,
+        'retry_delay': 1.0,
+        'sleep_time': 0.1
+    })
+
 
 def get_openai_config(config: Dict[str, Any]) -> Dict[str, Any]:
     """Get API endpoint configuration"""
