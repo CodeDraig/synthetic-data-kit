@@ -110,15 +110,24 @@ class SettingsForm(FlaskForm):
     vllm_api_base = StringField('VLLM API Base', validators=[OptionalValidator()])
     vllm_model = StringField('VLLM Model', validators=[OptionalValidator()])
     vllm_port = IntegerField('VLLM Port', validators=[OptionalValidator()])
+    vllm_max_retries = IntegerField('VLLM Max Retries', validators=[OptionalValidator()])
+    vllm_retry_delay = FloatField('VLLM Retry Delay (s)', validators=[OptionalValidator()])
+    vllm_sleep_time = FloatField('VLLM Batch Sleep (s)', validators=[OptionalValidator()])
 
     # API Endpoint
     api_ep_api_base = StringField('API Endpoint Base URL', validators=[OptionalValidator()])
     api_ep_model = StringField('API Endpoint Model', validators=[OptionalValidator()])
     api_ep_api_key = PasswordField('API Endpoint API Key', validators=[OptionalValidator()])
+    api_ep_max_retries = IntegerField('API Endpoint Max Retries', validators=[OptionalValidator()])
+    api_ep_retry_delay = FloatField('API Endpoint Retry Delay (s)', validators=[OptionalValidator()])
+    api_ep_sleep_time = FloatField('API Endpoint Batch Sleep (s)', validators=[OptionalValidator()])
 
     # Ollama
     ollama_api_base = StringField('Ollama API Base', validators=[OptionalValidator()])
     ollama_model = StringField('Ollama Model', validators=[OptionalValidator()])
+    ollama_max_retries = IntegerField('Ollama Max Retries', validators=[OptionalValidator()])
+    ollama_retry_delay = FloatField('Ollama Retry Delay (s)', validators=[OptionalValidator()])
+    ollama_sleep_time = FloatField('Ollama Batch Sleep (s)', validators=[OptionalValidator()])
 
     # Paths
     paths_input_default = StringField('Input Directory (default)', validators=[OptionalValidator()])
@@ -128,6 +137,12 @@ class SettingsForm(FlaskForm):
     gen_temperature = FloatField('Generation Temperature', validators=[OptionalValidator()])
     gen_top_p = FloatField('Top P', validators=[OptionalValidator()])
     gen_max_tokens = IntegerField('Max Tokens', validators=[OptionalValidator()])
+    gen_chunk_size = IntegerField('Chunk Size', validators=[OptionalValidator()])
+    gen_overlap = IntegerField('Chunk Overlap', validators=[OptionalValidator()])
+    gen_batch_size = IntegerField('Batch Size', validators=[OptionalValidator()])
+    gen_max_context_length = IntegerField('Max Context Length', validators=[OptionalValidator()])
+    gen_summary_overlap = IntegerField('Summary Overlap', validators=[OptionalValidator()])
+    gen_num_pairs = IntegerField('Default QA Pairs', validators=[OptionalValidator()])
 
     submit = SubmitField('Save Settings')
 
@@ -557,15 +572,30 @@ def settings():
         form.vllm_api_base.data = vllm_conf.get('api_base')
         form.vllm_model.data = vllm_conf.get('model')
         form.vllm_port.data = vllm_conf.get('port')
+        form.vllm_max_retries.data = vllm_conf.get('max_retries')
+        form.vllm_retry_delay.data = vllm_conf.get('retry_delay')
+        form.vllm_sleep_time.data = vllm_conf.get('sleep_time')
         form.api_ep_api_base.data = api_conf.get('api_base')
         form.api_ep_model.data = api_conf.get('model')
+        form.api_ep_max_retries.data = api_conf.get('max_retries')
+        form.api_ep_retry_delay.data = api_conf.get('retry_delay')
+        form.api_ep_sleep_time.data = api_conf.get('sleep_time')
         form.ollama_api_base.data = ollama_conf.get('api_base')
         form.ollama_model.data = ollama_conf.get('model')
+        form.ollama_max_retries.data = ollama_conf.get('max_retries')
+        form.ollama_retry_delay.data = ollama_conf.get('retry_delay')
+        form.ollama_sleep_time.data = ollama_conf.get('sleep_time')
         form.paths_input_default.data = input_dir
         form.paths_output_default.data = output_dir
         form.gen_temperature.data = gen_conf.get('temperature')
         form.gen_top_p.data = gen_conf.get('top_p')
         form.gen_max_tokens.data = gen_conf.get('max_tokens')
+        form.gen_chunk_size.data = gen_conf.get('chunk_size')
+        form.gen_overlap.data = gen_conf.get('overlap')
+        form.gen_batch_size.data = gen_conf.get('batch_size')
+        form.gen_max_context_length.data = gen_conf.get('max_context_length')
+        form.gen_summary_overlap.data = gen_conf.get('summary_overlap')
+        form.gen_num_pairs.data = gen_conf.get('num_pairs')
 
     if form.validate_on_submit():
         overrides = {
@@ -576,22 +606,24 @@ def settings():
                 'api_base': form.vllm_api_base.data or vllm_conf.get('api_base'),
                 'model': form.vllm_model.data or vllm_conf.get('model'),
                 'port': form.vllm_port.data or vllm_conf.get('port'),
-                'max_retries': vllm_conf.get('max_retries'),
-                'retry_delay': vllm_conf.get('retry_delay'),
+                'max_retries': form.vllm_max_retries.data if form.vllm_max_retries.data is not None else vllm_conf.get('max_retries'),
+                'retry_delay': form.vllm_retry_delay.data if form.vllm_retry_delay.data is not None else vllm_conf.get('retry_delay'),
+                'sleep_time': form.vllm_sleep_time.data if form.vllm_sleep_time.data is not None else vllm_conf.get('sleep_time'),
             },
             'api-endpoint': {
                 'api_base': form.api_ep_api_base.data or api_conf.get('api_base'),
                 'model': form.api_ep_model.data or api_conf.get('model'),
                 'api_key': form.api_ep_api_key.data or api_conf.get('api_key'),
-                'max_retries': api_conf.get('max_retries'),
-                'retry_delay': api_conf.get('retry_delay'),
+                'max_retries': form.api_ep_max_retries.data if form.api_ep_max_retries.data is not None else api_conf.get('max_retries'),
+                'retry_delay': form.api_ep_retry_delay.data if form.api_ep_retry_delay.data is not None else api_conf.get('retry_delay'),
+                'sleep_time': form.api_ep_sleep_time.data if form.api_ep_sleep_time.data is not None else api_conf.get('sleep_time'),
             },
             'ollama': {
                 'api_base': form.ollama_api_base.data or ollama_conf.get('api_base'),
                 'model': form.ollama_model.data or ollama_conf.get('model'),
-                'max_retries': ollama_conf.get('max_retries'),
-                'retry_delay': ollama_conf.get('retry_delay'),
-                'sleep_time': ollama_conf.get('sleep_time'),
+                'max_retries': form.ollama_max_retries.data if form.ollama_max_retries.data is not None else ollama_conf.get('max_retries'),
+                'retry_delay': form.ollama_retry_delay.data if form.ollama_retry_delay.data is not None else ollama_conf.get('retry_delay'),
+                'sleep_time': form.ollama_sleep_time.data if form.ollama_sleep_time.data is not None else ollama_conf.get('sleep_time'),
             },
             'paths': {
                 'input': form.paths_input_default.data or input_dir,
@@ -602,9 +634,13 @@ def settings():
             'generation': {
                 'temperature': form.gen_temperature.data if form.gen_temperature.data is not None else gen_conf.get('temperature'),
                 'top_p': form.gen_top_p.data if form.gen_top_p.data is not None else gen_conf.get('top_p'),
-                'chunk_size': gen_conf.get('chunk_size'),
-                'overlap': gen_conf.get('overlap'),
+                'chunk_size': form.gen_chunk_size.data if form.gen_chunk_size.data is not None else gen_conf.get('chunk_size'),
+                'overlap': form.gen_overlap.data if form.gen_overlap.data is not None else gen_conf.get('overlap'),
+                'batch_size': form.gen_batch_size.data if form.gen_batch_size.data is not None else gen_conf.get('batch_size'),
                 'max_tokens': form.gen_max_tokens.data if form.gen_max_tokens.data is not None else gen_conf.get('max_tokens'),
+                'max_context_length': form.gen_max_context_length.data if form.gen_max_context_length.data is not None else gen_conf.get('max_context_length'),
+                'summary_overlap': form.gen_summary_overlap.data if form.gen_summary_overlap.data is not None else gen_conf.get('summary_overlap'),
+                'num_pairs': form.gen_num_pairs.data if form.gen_num_pairs.data is not None else gen_conf.get('num_pairs'),
             }
         }
 

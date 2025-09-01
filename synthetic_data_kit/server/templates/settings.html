@@ -44,6 +44,20 @@
                 {{ form.vllm_port(class="form-control", placeholder="8000") }}
               </div>
             </div>
+            <div class="row g-3 mt-2">
+              <div class="col-md-3">
+                <label for="vllm_max_retries" class="form-label">{{ form.vllm_max_retries.label }}</label>
+                {{ form.vllm_max_retries(class="form-control", min="0") }}
+              </div>
+              <div class="col-md-3">
+                <label for="vllm_retry_delay" class="form-label">{{ form.vllm_retry_delay.label }}</label>
+                {{ form.vllm_retry_delay(class="form-control", step="0.1", min="0") }}
+              </div>
+              <div class="col-md-3">
+                <label for="vllm_sleep_time" class="form-label">{{ form.vllm_sleep_time.label }}</label>
+                {{ form.vllm_sleep_time(class="form-control", step="0.1", min="0") }}
+              </div>
+            </div>
           </div>
 
           <div class="mb-4">
@@ -65,6 +79,20 @@
                 <div class="form-text">Not persisted to disk; applied to this server session only.</div>
               </div>
             </div>
+            <div class="row g-3 mt-2">
+              <div class="col-md-3">
+                <label for="api_ep_max_retries" class="form-label">{{ form.api_ep_max_retries.label }}</label>
+                {{ form.api_ep_max_retries(class="form-control", min="0") }}
+              </div>
+              <div class="col-md-3">
+                <label for="api_ep_retry_delay" class="form-label">{{ form.api_ep_retry_delay.label }}</label>
+                {{ form.api_ep_retry_delay(class="form-control", step="0.1", min="0") }}
+              </div>
+              <div class="col-md-3">
+                <label for="api_ep_sleep_time" class="form-label">{{ form.api_ep_sleep_time.label }}</label>
+                {{ form.api_ep_sleep_time(class="form-control", step="0.1", min="0") }}
+              </div>
+            </div>
             <div class="form-text">Ensure model references comply with AI-MODELS.md aliases.</div>
           </div>
 
@@ -78,6 +106,20 @@
               <div class="col-md-4">
                 <label for="ollama_model" class="form-label">{{ form.ollama_model.label }}</label>
                 {{ form.ollama_model(class="form-control", placeholder="Model name") }}
+              </div>
+            </div>
+            <div class="row g-3 mt-2">
+              <div class="col-md-3">
+                <label for="ollama_max_retries" class="form-label">{{ form.ollama_max_retries.label }}</label>
+                {{ form.ollama_max_retries(class="form-control", min="0") }}
+              </div>
+              <div class="col-md-3">
+                <label for="ollama_retry_delay" class="form-label">{{ form.ollama_retry_delay.label }}</label>
+                {{ form.ollama_retry_delay(class="form-control", step="0.1", min="0") }}
+              </div>
+              <div class="col-md-3">
+                <label for="ollama_sleep_time" class="form-label">{{ form.ollama_sleep_time.label }}</label>
+                {{ form.ollama_sleep_time(class="form-control", step="0.1", min="0") }}
               </div>
             </div>
           </div>
@@ -118,6 +160,34 @@
               <div class="col-md-3">
                 <label for="gen_max_tokens" class="form-label">{{ form.gen_max_tokens.label }}</label>
                 {{ form.gen_max_tokens(class="form-control", min="1") }}
+              </div>
+            </div>
+            <div class="row g-3 mt-2">
+              <div class="col-md-3">
+                <label for="gen_chunk_size" class="form-label">{{ form.gen_chunk_size.label }}</label>
+                {{ form.gen_chunk_size(class="form-control", min="1") }}
+              </div>
+              <div class="col-md-3">
+                <label for="gen_overlap" class="form-label">{{ form.gen_overlap.label }}</label>
+                {{ form.gen_overlap(class="form-control", min="0") }}
+              </div>
+              <div class="col-md-3">
+                <label for="gen_batch_size" class="form-label">{{ form.gen_batch_size.label }}</label>
+                {{ form.gen_batch_size(class="form-control", min="1") }}
+              </div>
+            </div>
+            <div class="row g-3 mt-2">
+              <div class="col-md-3">
+                <label for="gen_max_context_length" class="form-label">{{ form.gen_max_context_length.label }}</label>
+                {{ form.gen_max_context_length(class="form-control", min="1") }}
+              </div>
+              <div class="col-md-3">
+                <label for="gen_summary_overlap" class="form-label">{{ form.gen_summary_overlap.label }}</label>
+                {{ form.gen_summary_overlap(class="form-control", min="0") }}
+              </div>
+              <div class="col-md-3">
+                <label for="gen_num_pairs" class="form-label">{{ form.gen_num_pairs.label }}</label>
+                {{ form.gen_num_pairs(class="form-control", min="1") }}
               </div>
             </div>
           </div>
